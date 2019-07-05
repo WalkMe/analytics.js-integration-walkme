@@ -1,7 +1,7 @@
 /* eslint-env node */
 'use strict';
 
-module.exports = function(config) {
+module.exports = function (config) {
   config.set({
     files: [
       'test/**/*.test.js'

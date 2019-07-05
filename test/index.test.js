@@ -1,214 +1,132 @@
 'use strict';
 
 var Analytics = require('@segment/analytics.js-core').constructor;
+var integration = require('@segment/analytics.js-integration');
 var sandbox = require('@segment/clear-env');
 var tester = require('@segment/analytics.js-integration-tester');
-var SnapPixel = require('../lib');
+var fmt = require('@segment/fmt');
+var Walkme = require('../lib');
 
-describe('Snap Pixel', function() {
+describe('WalkMe', function () {
   var analytics;
-  var snapPixel;
+  var walkme;
   var options = {
-    pixelId: '123123123'
+    walkmeGuid: 'E011E9F84AD84D819286A5A94BAF2255',
+    walkmeEnv: 'test',
+    walkmeLoadInIframe: true
   };
 
-  beforeEach(function() {
+  beforeEach(function () {
     analytics = new Analytics();
-    snapPixel = new SnapPixel(options);
-    analytics.use(SnapPixel);
+    walkme = new Walkme(options);
+    analytics.use(Walkme);
     analytics.use(tester);
-    analytics.add(snapPixel);
-    analytics.identify('123', {
-      e_mail: 'gottaketchumall@poke.mon'
-    });
+    analytics.add(walkme);
   });
 
-  afterEach(function(done) {
-    analytics.waitForScripts(function() {
-      analytics.restore();
-      analytics.reset();
-      snapPixel.reset();
-      sandbox();
-      done();
-    });
+  afterEach(function () {
+    analytics.restore();
+    analytics.reset();
+    walkme.reset();
+    sandbox();
   });
 
-  describe('before loading', function() {
-    beforeEach(function() {
-      analytics.stub(snapPixel, 'load');
+  it('should have the correct settings', function () {
+    analytics.compare(
+      Walkme,
+      integration('WalkMe')
+        .assumesPageview()
+        .option('walkmeGuid', '')
+        .option('walkmeEnv', '')
+    );
+  });
+
+  describe('before loading', function () {
+    beforeEach(function () {
+      analytics.stub(walkme, 'load');
     });
 
-    afterEach(function() {
-      snapPixel.reset();
-    });
-
-    describe('#initialize', function() {
-      it('should call load on initialize', function() {
+    describe('#initialize', function () {
+      it('it should set global WalkMe options', function () {
+        analytics.assert(!window._walkmeConfig);
         analytics.initialize();
-        analytics.called(snapPixel.load);
-      });
-
-      it('should create snaptr object', function() {
-        analytics.initialize();
-        analytics.assert(window.snaptr instanceof Function);
-      });
-
-      it('should call init with the user\'s email', function() {
-        analytics.stub(window, 'snaptr');
-        analytics.spy(window.snaptr);
-        setTimeout(function() {
-          analytics.initialize();
-          analytics.called(window.snaptr, 'init', options.pixelId, {
-            user_email: 'gottaketchumall@poke.mon'
-          });
-        }, 1000);
+        analytics.page();
+        analytics.deepEqual(window._walkmeConfig, { smartLoad: true });
       });
     });
   });
 
-  describe('loading', function() {
-    beforeEach(function() {
-      analytics.stub(window, 'snaptr');
-      analytics.initialize();
+  describe('loading', function () {
+    beforeEach(function () {
+      analytics.spy(walkme, 'load');
     });
 
-    it('should load', function(done) {
-      analytics.load(snapPixel, done);
+    it('should load walkme test lib', function (done) {
+      try {
+        analytics.load(walkme, function () {
+          analytics.loaded(
+            fmt(
+              '<script src="https://cdn.walkme.com/users/%s/%s/walkme_%s_https.js"/>',
+              options.walkmeGuid.toLowerCase(),
+              'test',
+              options.walkmeGuid.toLowerCase()
+            )
+          );
+
+          analytics.assert(
+            !!window.WalkMeAPI,
+            'Expected WalkMeAPI to be present on the page'
+          );
+
+          done();
+        });
+      }
+      catch (e) {
+        done(e);
+      }
     });
   });
 
-  describe('after loading', function() {
-    beforeEach(function(done) {
+  describe('after loading', function (done) {
+    beforeEach(function (done) {
       analytics.once('ready', done);
       analytics.initialize();
+      analytics.page();
     });
 
-    describe('#page', function() {
-      beforeEach(function() {
-        analytics.stub(window, 'snaptr');
+    describe('#identify', function () {
+      beforeEach(function () {
+        analytics.stub(window.WalkMeAPI, 'identify');
       });
 
-      it('should track a pageview', function() {
-        analytics.page();
-        analytics.called(window.snaptr, 'track', 'PAGE_VIEW');
-      });
-    });
+      it('Should call WalkMe API when identify happens', function () {
+        var expected = {
+          userId: '112233',
+          isAnonUser: false,
+          traits: {
+            id: '112233'
+          }
+        };
 
-    describe('#track', function() {
-      beforeEach(function() {
-        analytics.stub(window, 'snaptr');
-      });
-
-      describe('event not mapped standard', function() {
-        it('should send a "custom" event', function() {
-          analytics.track('event');
-          analytics.called(window.snaptr, 'trackCustom', 'event');
-        });
-
-        it('should send a "custom" event and properties', function() {
-          analytics.track('event', { property: true });
-          analytics.called(window.snaptr, 'trackCustom', 'event', { property: true });
-        });
-
-        it('should send properties correctly', function() {
-          analytics.track('event', {
-            currency: 'XXX',
-            revenue: 13,
-            property: true
-          });
-          analytics.called(window.snaptr, 'trackCustom', 'event', {
-            currency: 'XXX',
-            price: '13.00',
-            property: true
-          });
-        });
+        analytics.identify(expected.userId);
+        analytics.called(window.WalkMeAPI.identify);
+        analytics.equal(expected.isAnonUser, false);
+        analytics.equal(expected.userId, window._walkmeInternals.Segment.userId);
       });
 
-      describe('Segment Ecommerce => Snap Standard Events', function() {
-        describe('Product List Viewed', function() {
-          it('Should map item_ids parameter to product_ids', function() {
-            analytics.track('Product List Viewed', {
-              category: 'Games', 
-              products: [
-                {
-                  product_id: '507f1f77bcf86cd799439011',
-                  sku: '45790-32',
-                  name: 'Monopoly: 3rd Edition',
-                  price: 19,
-                  position: 1,
-                  category: 'Games',
-                  url: 'https://www.example.com/product/path',
-                  image_url: 'https://www.example.com/product/path.jpg'
-                },
-                {
-                  product_id: '505bd76785ebb509fc183733',
-                  sku: '46493-32',
-                  name: 'Uno Card Game',
-                  price: 3,
-                  position: 2,
-                  category: 'Games'
-                }
-              ]
-            });
-            analytics.called(window.snaptr, 'track', 'VIEW_CONTENT', {
-              item_ids: ['507f1f77bcf86cd799439011', '505bd76785ebb509fc183733']
-            });
-          });
-        });
+      it('Should call WalkMe API with anonymous user', function () {
+        var expected = {
+          userId: 'user_id_example',
+          isAnonUser: true,
+          traits: {}
+        };
 
-        it('Product Viewed', function() {
-          analytics.track('Product Viewed', {
-            product_id: '507f1f77bcf86cd799439011',
-            currency: 'USD',
-            quantity: 1,
-            price: 44.33,
-            name: 'my product',
-            category: 'cat 1',
-            sku: 'p-298'
-          });
-          analytics.called(window.snaptr, 'track', 'VIEW_CONTENT', {
-            item_ids: ['507f1f77bcf86cd799439011'],
-            item_category: 'cat 1',
-            currency: 'USD',
-            price: '44.33'
-          });
-        });
-
-        it('Adding to Cart', function() {
-          analytics.track('Product Added', {
-            product_id: '507f1f77bcf86cd799439011',
-            currency: 'USD',
-            quantity: 1,
-            name: 'my product',
-            category: 'cat 1',
-            sku: 'p-298',
-            price: 24.75
-          });
-          analytics.called(window.snaptr, 'track', 'ADD_TO_CART', {
-            item_ids: ['507f1f77bcf86cd799439011'],
-            item_category: 'cat 1',
-            currency: 'USD',
-            price: '24.75'
-          });
-        });
-
-        it('Completing an Order', function() {
-          analytics.track('Order Completed', {
-            products: [
-              { product_id: '507f1f77bcf86cd799439011' },
-              { product_id: '505bd76785ebb509fc183733' }
-            ],
-            currency: 'USD',
-            total: 0.50,
-            orderId: 123
-          });
-          analytics.called(window.snaptr, 'track', 'PURCHASE', {
-            item_ids: ['507f1f77bcf86cd799439011', '505bd76785ebb509fc183733'],
-            currency: 'USD',
-            price: '0.50',
-            transaction_id: '123'
-          });
-        });
+        analytics.user().anonymousId(expected.userId);
+        analytics.identify();
+        analytics.called(window.WalkMeAPI.identify);
+        analytics.equal(expected.userId, window._walkmeInternals.Segment.userId);
+        analytics.equal(expected.isAnonUser, true);
+        analytics.deepEqual(expected.traits, window._walkmeInternals.Segment.traits);
       });
     });
   });

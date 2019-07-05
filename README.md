@@ -1,6 +1,6 @@
-# analytics.js-integration-snap-pixel 
+# analytics.js-integration-walkme
 
-Snap Pixel integration for [Analytics.js][].
+WalkMe integration for [Analytics.js][].
 
 ## License
 

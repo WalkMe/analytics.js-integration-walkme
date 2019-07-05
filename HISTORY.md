@@ -1,4 +1,4 @@
-1.0.0 / 2019-05-10
+1.0.0 / 2019-07-03
 ==================
 
-  * First stab at snap pixel!
+  * First WalkMe integration release

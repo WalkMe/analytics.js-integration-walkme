@@ -62,7 +62,7 @@ distclean: clean
 
 # Lint JavaScript source files.
 lint: install
-	@$(ESLINT) $(ALL_FILES)
+	@"$(ESLINT)" "$(ALL_FILES)"
 .PHONY: lint
 
 # Attempt to fix linting errors.
@@ -72,7 +72,7 @@ fmt: install
 
 # Run browser unit tests in a browser.
 test-browser: install
-	@$(KARMA) start $(KARMA_FLAGS) $(KARMA_CONF)
+	@"$(KARMA)" start $(KARMA_FLAGS) "$(KARMA_CONF)"
 
 # Default test target.
 test: lint test-browser
