@@ -16,7 +16,7 @@
     "type": "git",
     "url": "git+https://github.com/walkme/analytics.js-integration-walkme.git"
   },
-  "author": "Segment <support@walkme.com>",
+  "author": "WalkMe <support@walkme.com>",
   "license": "SEE LICENSE IN LICENSE",
   "bugs": {
     "url": "https://github.com/walkme/analytics.js-integration-walkme/issues"
