@@ -67,9 +67,9 @@ describe('WalkMe', function () {
           analytics.loaded(
             fmt(
               '<script src="https://cdn.walkme.com/users/%s/%s/walkme_%s_https.js"/>',
-              options.walkmeGuid.toLowerCase(),
+              options.walkMeSystemId.toLowerCase(),
               'test',
-              options.walkmeGuid.toLowerCase()
+              options.walkMeSystemId.toLowerCase()
             )
           );
 
