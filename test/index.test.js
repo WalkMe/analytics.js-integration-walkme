@@ -11,9 +11,9 @@ describe('WalkMe', function () {
   var analytics;
   var walkme;
   var options = {
-    walkmeGuid: 'E011E9F84AD84D819286A5A94BAF2255',
-    walkmeEnv: 'test',
-    walkmeLoadInIframe: true
+    walkMeSystemId: 'E011E9F84AD84D819286A5A94BAF2255',
+    walkMeEnvironment: 'test',
+    walkMeLoadInIframe: true
   };
 
   beforeEach(function () {
@@ -36,8 +36,8 @@ describe('WalkMe', function () {
       Walkme,
       integration('WalkMe')
         .assumesPageview()
-        .option('walkmeGuid', '')
-        .option('walkmeEnv', '')
+        .option('walkMeSystemId', '')
+        .option('walkMeEnvironment', '')
     );
   });
 
