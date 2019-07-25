@@ -51,6 +51,7 @@ describe('WalkMe', function () {
         analytics.assert(!window._walkmeConfig);
         analytics.initialize();
         analytics.page();
+        analytics.identify();
         analytics.deepEqual(window._walkmeConfig, { smartLoad: true });
       });
     });
@@ -73,12 +74,16 @@ describe('WalkMe', function () {
             )
           );
 
-          analytics.assert(
-            !!window.WalkMeAPI,
-            'Expected WalkMeAPI to be present on the page'
-          );
+          analytics.identify();
 
-          done();
+          window.walkme_ready = function () {
+            analytics.assert(
+              !!window.WalkMeAPI,
+              'Expected WalkMeAPI to be present on the page'
+            );
+
+            done();
+          }
         });
       }
       catch (e) {
@@ -87,7 +92,7 @@ describe('WalkMe', function () {
     });
   });
 
-  describe('after loading', function (done) {
+  describe('after loading', function () {
     beforeEach(function (done) {
       analytics.once('ready', done);
       analytics.initialize();
@@ -95,11 +100,7 @@ describe('WalkMe', function () {
     });
 
     describe('#identify', function () {
-      beforeEach(function () {
-        analytics.stub(window.WalkMeAPI, 'identify');
-      });
-
-      it('Should call WalkMe API when identify happens', function () {
+      it('Should call WalkMe API when identify happens', function (done) {
         var expected = {
           userId: '112233',
           isAnonUser: false,
@@ -109,12 +110,16 @@ describe('WalkMe', function () {
         };
 
         analytics.identify(expected.userId);
-        analytics.called(window.WalkMeAPI.identify);
-        analytics.equal(expected.isAnonUser, false);
-        analytics.equal(expected.userId, window._walkmeInternals.Segment.userId);
+
+        window.walkme_ready = function () {
+          analytics.equal(expected.isAnonUser, false);
+          analytics.equal(expected.userId, window._walkmeInternals.Segment.userId);
+
+          done();
+        }
       });
 
-      it('Should call WalkMe API with anonymous user', function () {
+      it('Should call WalkMe API with anonymous user', function (done) {
         var expected = {
           userId: 'user_id_example',
           isAnonUser: true,
@@ -123,10 +128,13 @@ describe('WalkMe', function () {
 
         analytics.user().anonymousId(expected.userId);
         analytics.identify();
-        analytics.called(window.WalkMeAPI.identify);
         analytics.equal(expected.userId, window._walkmeInternals.Segment.userId);
         analytics.equal(expected.isAnonUser, true);
         analytics.deepEqual(expected.traits, window._walkmeInternals.Segment.traits);
+
+        window.walkme_ready = function () {
+          done();
+        }
       });
     });
   });
