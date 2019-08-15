@@ -1,5 +1,7 @@
 'use strict';
 
+window.localStorage.setItem("wm_segment", true);
+
 var Analytics = require('@segment/analytics.js-core').constructor;
 var integration = require('@segment/analytics.js-integration');
 var sandbox = require('@segment/clear-env');
